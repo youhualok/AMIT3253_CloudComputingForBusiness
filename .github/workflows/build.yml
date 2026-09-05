@@ -25,7 +25,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  TF_WORKING_DIR: envs/sandbox
+  TF_WORKING_DIR: sports-facility-booking/envs/sandbox
 
 jobs:
   terraform:
