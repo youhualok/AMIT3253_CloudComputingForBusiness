@@ -1,0 +1,8 @@
+# Binary files
+*.exe
+*.zip
+
+# Terraform temporary/downloads files
+.terraform/
+*.tfstate
+*.tfstate.backup
