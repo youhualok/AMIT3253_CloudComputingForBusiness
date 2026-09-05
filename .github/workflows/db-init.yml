@@ -1,0 +1,48 @@
+name: DB - Seed Database (one-time)
+
+on:
+  workflow_dispatch: {}
+
+env:
+  AWS_REGION: us-east-1
+  APP_TAG: assignment-event-ticketing
+  SCHEMA_KEY: db-init/schema.sql
+  SCRIPT_KEY: db-init/seed-db.sh
+  SCHEMA_BUCKET: assignment-s3-uploads-291072715329
+
+jobs:
+  seed:
+    name: Seed RDS from schema.sql
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload schema.sql, seed script, and sample images to S3
+        run: |
+          if [ -f "schema.sql" ]; then
+            aws s3 cp schema.sql "s3://${{ env.SCHEMA_BUCKET }}/${{ env.SCHEMA_KEY }}"
+          fi
+
+      - name: Run seed script on a running app instance via SSM
+        run: |
+          set -euo pipefail
+
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:App,Values=${{ env.APP_TAG }}" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" --output text)
+
+          if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" == "None" ]; then
+            echo "No running app instance found - apply infra and wait for at least one healthy instance first."
+            exit 1
+          fi
+
+          echo "Found running instance: $INSTANCE_ID"
