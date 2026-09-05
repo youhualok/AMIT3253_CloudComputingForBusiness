@@ -1,3 +1,3 @@
-data "aws_s3_bucket" "uploads" {
+resource "aws_s3_bucket" "uploads" {
   bucket = var.bucket_name
 }
